@@ -1,0 +1,2 @@
+NEW是MCCAD生成文件
+BLK_box模拟原始文件
