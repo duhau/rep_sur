@@ -226,11 +226,11 @@ def replace_sur(new_surs,old_surs):
     for new_sur in new_surs:
         for old_sur in old_surs:
             new_sur = compare_surface(new_sur, old_sur)  #replacement complent in compare function
-            if new_sur.rep_id:
-                #print "surface:", new_sur.id, "is ", new_sur.rep_relation, "as ", old_sur.id
-                log_string = ''.join([log_string, 'surface: ', str(new_sur.id), ' is ', \
-                                      new_sur.rep_relation, ' as ', str(new_sur.rep_id), '\n'])
-                break
+        if new_sur.rep_id:
+            #print "surface:", new_sur.id, "is ", new_sur.rep_relation, "as ", old_sur.id
+            log_string = ''.join([log_string, 'surface: ', str(new_sur.id), ' is ', \
+                                  new_sur.rep_relation, ' as ', str(new_sur.rep_id), '\n'])
+            
     # write surface replace relationship to log file
     flog = open('out.log', 'w')
     flog.write(log_string)
@@ -247,10 +247,6 @@ if __name__ == '__main__':
     origin_end_mark=['End of CELL Card','End of SURFACE Card','End of Material Card']
     MCCAD_start_mark=['Cells Card','Surfaces Card','Materials Card']
     MCCAD_end_mark=['End of Cell','End of Surface','End of Convertion']
-    
-    # get current dir
-    suf_start_mark='Surfaces Card'
-    suf_end_mark='End of Surface'
     
     file_dir=os.getcwd() 
     # get origin MCNP files' dir

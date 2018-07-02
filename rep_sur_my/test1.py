@@ -1,28 +1,28 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
-#class Test():
-    #def __init__(self, math, chinese, chemsity,english):
-        #self.math=math
-        #self.chinese=chinese
-        #self.chemsity=chemsity
-        #self.english=english
+class Test():
+    def __init__(self, math, chinese, chemsity,english):
+        self.math=math
+        self.chinese=chinese
+        self.chemsity=chemsity
+        self.english=english
         
-#def compare(teata,testb):
+def compare(teata,testb):
 
-    #if teata.math < testb.math:
-        #teata.math=  testb.math
-        #return teata
-    #else:
-        #return teata 
+    if teata.math < testb.math:
+        teata.math=  testb.math
+        return teata
+    else:
+        return teata 
         
-#Li=[Test(60,69,72,65),Test(82,92,70,45)]
-#Wang=[Test(70,89,90,70),Test(77,85,84,89)]
+Li=[Test(60,69,72,65),Test(82,92,70,45)]
+Wang=[Test(70,89,90,70),Test(77,85,84,89)]
 
-#for a in Li:
-    #for b in Wang:
-        #a=compare(a,b)   #return the last compare 
+for a in Li:
+    for b in Wang:
+        a=compare(a,b)   #return the last compare 
         
-#print(Li[0].math)
+print(Li[0].math)
         
         
     
@@ -56,7 +56,3 @@
     #fin.write(sur_str)
     #fin.close()
 
-x=[False,True, False]
-for i in range(len(x)):
-    if x[i] is True:
-        print(x)

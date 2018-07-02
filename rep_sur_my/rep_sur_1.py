@@ -96,7 +96,7 @@ def is_surface(line):
     else:
         return False
 
-def read_surfaces(filename):
+def read_surfaces(filename,suf_start_mark,suf_end_mark):
     '''
     read surfaces
     '''       
@@ -106,18 +106,22 @@ def read_surfaces(filename):
         # Open origin MCNP file
         with open(filename, 'r') as f:
             sur_start = False
+            start_compile=re.compile(r'(.*)%s(.*)'% suf_start_mark) 
+            end_compile=re.compile(r'(.*)%s(.*)'% suf_end_mark)
             for line in f:
+                start_compile_mark=start_compile.search(line)
+                end_compile_mark=end_compile.search(line)
                 line = line.rstrip()
                 # read and treat
-                if "SURFACE CARD START" in line:        
+                if start_compile_mark:        
                     sur_start = True
                     continue
-                if "c " in line or "C " in line:
-                    continue
-                if "SURFACE CARD END" in line:
+                if end_compile_mark:
                     sur = construct_surface(pre_lines)
                     surfaces.append(sur)
-                    break
+                    break                
+                if line.startswith("c") or line.startswith("C"):
+                    continue
                 if sur_start:
                     # read surface
                     sur_flag = is_surface(line)
@@ -185,7 +189,7 @@ def is_exit_zero(new_sur_paras,old_sur_paras):
         if abs(float(new_sur_paras[i])) < 1e-15 and same_flag:
             return True
         else:
-            return False
+            continue
 
 # judge whether the surface is same or oppsite
 def case_flag(new_sur_paras,old_sur_paras):
@@ -282,6 +286,8 @@ if __name__ == '__main__':
     #MCCAD_start_mark=['Cells Card','Surfaces Card','Materials Card']
     #MCCAD_end_mark=['Void spaces','End of Surface','End of Convertion']
     # get current dir
+    suf_start_mark='SURFACE CARD START'
+    suf_end_mark='SURFACE CARD END'
     
     file_dir=os.getcwd() 
     # get origin MCNP files' dir
@@ -289,8 +295,8 @@ if __name__ == '__main__':
     # get MCCAD_files' dir
     OLD_filename = read_file(file_dir)    
     print("Start rep_sur")
-    old_surs = read_surfaces(NEW_filename)
-    new_surs = read_surfaces(OLD_filename)    
+    old_surs = read_surfaces(NEW_filename,suf_start_mark,suf_end_mark)
+    new_surs = read_surfaces(OLD_filename,suf_start_mark,suf_end_mark)    
     log_string = ''
     
     for new_sur in new_surs:
