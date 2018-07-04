@@ -21,6 +21,35 @@ avail_types = ('p', 'px', 'py', 'pz',
                'tx', 'ty', 'tz',
                'xyzp')
 
+class Cell(object):
+    '''
+    '''
+    def __init__(self, cell_id='0', mat_id='0', mat_density=' ',
+               sur_list=[], imp_list=[1, 1]):
+        # id is int
+        self.id = cell_id
+        self.mat_id = mat_id
+        self.mat_density = mat_density
+        self.sur_list = sur_list
+        self.imp_list = imp_list
+    
+    def out_str(self):
+        '''
+        '''
+        out_str = ''
+        id_str = "{:<6}".format(str(self.id))
+        mat_id_str = "{:<5}".format(self.mat_id)
+        mat_density_str = ''.join([' ', self.mat_density])
+        out_str = ''.join([out_str, id_str, mat_id_str,mat_density_str])
+        line_breaker = 0
+        for para in self.sur_list+self.imp_list:
+            if len(out_str) + len(para) < 72 * (1 + line_breaker):
+                out_str = ''.join([out_str, ' ', para])
+            else:
+                out_str = ''.join([out_str, '\n', '              ', para])
+                line_breaker = line_breaker + 1                
+        return out_str
+    
 class Surface(object):
     '''
     class Surface
@@ -47,7 +76,7 @@ class Surface(object):
         for i in range(len(self.paras)):
             self.paras[i] = "{:<17}".format(self.paras[i])
         for para in self.paras:
-            if len(out_str) + len(para) < 79 * (1 + line_breaker):
+            if len(out_str) + len(para) < 72 * (1 + line_breaker):
                 out_str = ''.join([out_str, ' ', para])
             else:
                 out_str = ''.join([out_str, '\n', 
@@ -63,9 +92,9 @@ def get_reflect_id(para):
     id = -1
     # if surface is reflective, reflect flag is '*', otherwise, the flag is ''
     if para[0] == '*':
-        return '*', int(para[1:])
+        return '*', para[1:]
     else:
-        return '', int(para)
+        return '', para
 
 def construct_surface(paras=None):
     """
@@ -213,9 +242,9 @@ def find_sur_via_id(sur_id, surfaces):
             return sur
     raise ValueError('sur_id: {0} not in surfaces list'.format(sur_id))
 
-def read_filename(file_dir):
+def read_filename(file_dir,str):
     # get OLD MCNP files' dir
-    filename = filedialog.askopenfilename(initialdir=file_dir, filetypes = (("OLD MCNP files", "*") \
+    filename = filedialog.askopenfilename(title=str,initialdir=file_dir, filetypes = (("OLD MCNP files", "*") \
                                                                             ,("All files", "*.*") ))  
     return filename
 
@@ -235,12 +264,163 @@ def replace_sur(new_surs,old_surs):
     flog = open('out.log', 'w')
     flog.write(log_string)
     flog.close()      # should close file    
-
-    out_str = ''
-    for sur in new_surs:
-        out_str = ''.join([out_str, sur.out_str(), '\n'])
     print("Surface replace finished. Read out.log to see details.")
-    return out_str
+    return new_surs
+
+def replace_cell(MCCAD_cells,new_surface):
+    for new_suf in new_surface:
+        if new_suf.rep_relation == 'same':
+            for new_cell in MCCAD_cells:
+                for k, suf in enumerate(new_cell.sur_list):
+                    if new_suf.id in suf :
+                        pos=suf.index(new_suf.id)
+                        suf_list=list(suf)
+                        id_list=list(new_suf.id)
+                        for i in id_list:
+                            suf_list.remove(i)
+                        suf_list.insert(pos,new_suf.rep_id)
+                        suf=''.join(suf_list)
+                        new_cell.sur_list[k]=suf
+                    else:
+                        new_cell.sur_list[k]=suf
+                    
+        elif new_suf.rep_relation == 'oppsite':
+            for new_cell in MCCAD_cells:
+                for k, suf in enumerate(new_cell.sur_list):
+                    if new_suf.id in suf :
+                        pos=suf.index(new_suf.id)
+                        if pos==0:   
+                            suf_list=list(suf)
+                            id_list=list(new_suf.id)
+                            for i in id_list:
+                                suf_list.remove(i)
+                            suf_list.insert(pos,new_suf.rep_id)
+                            suf='-' + ''.join(suf_list)
+                            new_cell.sur_list[k]=suf
+                        elif pos >0 :
+                            if suf[pos-1]=='-':
+                                suf_list=list(suf)
+                                id_list=list(new_suf.id)
+                                for i in id_list:
+                                    suf_list.remove(i)
+                                suf_list.remove('-')
+                                suf_list.insert(pos,new_suf.rep_id)
+                                suf=''.join(suf_list) 
+                                new_cell.sur_list[k]=suf
+                            else:
+                                suf_list=list(suf)
+                                id_list=list(new_suf.id)
+                                for i in id_list:
+                                    suf_list.remove(i)
+                                suf_list.insert(pos,'-')
+                                suf_list.insert(pos+1,new_suf.rep_id)
+                                suf=''.join(suf_list)
+                                new_cell.sur_list[k]=suf
+                    else:
+                        new_cell.sur_list[k]=suf 
+    return MCCAD_cells
+        
+     
+def read_cells(filename,cell_start_mark,cell_end_mark):
+    '''
+    return cells, a list of cells
+    '''
+    cells = []
+    pre_lines = []
+    with open(filename, 'r') as f:
+        cell_start = False
+        start_compile=re.compile(r'(.*)%s(.*)'% cell_start_mark) 
+        end_compile=re.compile(r'(.*)%s(.*)'% cell_end_mark)        
+        for line in f:
+            start_compile_mark=start_compile.search(line)
+            end_compile_mark=end_compile.search(line)
+            line = line.rstrip()
+            # read and treat
+            if start_compile_mark:
+                cell_start = True
+                continue
+            if end_compile_mark:
+                cell = construct_cell(pre_lines)
+                cells.append(cell)
+                break            
+            if line.startswith("c") or line.startswith("C"):
+                continue
+            
+            if cell_start:
+                # read cell
+                cell_flag = is_cell(line)
+                if cell_flag:
+                    # lines in previous block represent a surface
+                    if pre_lines:
+                        cell = construct_cell(pre_lines)
+                        cells.append(cell)
+                        # store this line in the buffer
+                        pre_lines = []
+                    pre_lines.append(line)
+                else:
+                    # this line is a data line, store in the buffer
+                    pre_lines.append(line)
+    return cells
+
+def is_cell(line):
+    '''
+    '''
+    pattern = re.compile(r'\d{1,5}\s+\d{1,5}')
+    mark=pattern.search(line)
+    if line[0:5] == '     ':
+        return False
+    if mark:
+        return True
+    else:
+        return False
+    #if is_surface(line):
+        #return False
+    #if len(line) < 5:
+        #return False
+    #if line[0:5] == '     ':
+        #return False
+    #else:
+        #return True
+
+def construct_cell(paras=None):
+    """
+    construct cell using several lines
+    """
+    # paras check
+    if not isinstance(paras, list):
+        raise(ValueError, "paras must be a list")
+    # combine these lines into one string
+    cell_str = ''.join(paras)
+    para_list = cell_str.split()
+    cell_id = int(para_list[0])
+    mat_id = para_list[1]
+    
+    if mat_id != '0':
+        pattern = re.compile(r'(\d{1,5}\s+)(\d{1,5}\s+)(-?\d{1,}(\.\d{1,})?([E,e]-\d*)?)')
+        cell_serch_mark=pattern.search(cell_str)
+        suf_start_pos=cell_serch_mark.span()[1]
+        
+        pattern_imp=re.compile(r'IMP:',re.IGNORECASE)
+        cell_serch_mark_imp=pattern_imp.search(cell_str)
+        suf_end_pos=cell_serch_mark_imp.span()[0]
+        
+        mat_density = "{:<9.9f}".format(float(cell_serch_mark.group(3)))
+        sur_list = cell_str[suf_start_pos:suf_end_pos].split()
+        imp_list = cell_str[suf_end_pos:].split()
+    else:
+        mat_density = ' '
+        pattern = re.compile(r'(\d{1,5}\s+)(0\s+)')
+        cell_serch_mark=pattern.search(cell_str)
+        suf_start_pos=cell_serch_mark.span()[1]
+        
+        pattern_imp=re.compile(r'IMP:')
+        cell_serch_mark_imp=pattern_imp.search(cell_str)
+        suf_end_pos=cell_serch_mark_imp.span()[0]
+        
+        sur_list = cell_str[suf_start_pos:suf_end_pos].split()
+        imp_list = cell_str[suf_end_pos:].split()        
+    return Cell(cell_id=cell_id, mat_id=mat_id, mat_density=mat_density, sur_list=sur_list, imp_list=imp_list)
+
 
 if __name__ == '__main__':
     origin_start_mark=['CELL Card','SURFACE Card','Material Card']
@@ -250,9 +430,9 @@ if __name__ == '__main__':
     
     file_dir=os.getcwd() 
     # get origin MCNP files' dir
-    NEW_filename = read_filename(file_dir)
+    NEW_filename = read_filename(file_dir,'Open MCCAD file')
     # get MCCAD_files' dir
-    OLD_filename = read_filename(file_dir)    
+    OLD_filename = read_filename(file_dir,'Open origin file')    
     old_surs = read_surfaces(NEW_filename,origin_start_mark[1],origin_start_mark[2])
     new_surs = read_surfaces(OLD_filename,MCCAD_start_mark[1],MCCAD_start_mark[2])    
     new_surface=replace_sur(new_surs,old_surs)
