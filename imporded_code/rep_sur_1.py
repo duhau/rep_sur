@@ -4,6 +4,7 @@
 from tkinter import filedialog, messagebox
 import os.path
 import re
+import math
 
 '''
 This code is writen by DuHua
@@ -192,7 +193,11 @@ def change_paras_sign(paras):
         else:
             new_paras.append(para)
     return new_paras
- 
+
+def xiaoshudian(str):
+    return len(str.split('.')[1])
+    
+        
 def compare_surface(new_sur, old_sur):
     '''
     compare two surfaces
@@ -213,7 +218,10 @@ def compare_surface(new_sur, old_sur):
             elif abs(float(new_sur.paras[i])) > 1e-15:
                 non_zero_count+=1
                 # are the all the same number
-                if new_sur.paras[i][0:-2] == old_sur.paras[i][0:len(new_sur.paras[i][0:-2])]:
+                num_point=xiaoshudian(new_sur.paras[i])
+                if abs(float(new_sur.paras[i])-float(old_sur.paras[i])) < pow(10,-num_point):
+                    
+                #if new_sur.paras[i][0:-2] == old_sur.paras[i][0:len(new_sur.paras[i][0:-2])]:
                     same_count+=1
                 # all the paras have the same absolute value, check the sign, are they oppsite?
                 elif (new_sur.paras[i][0] != '-' and old_sur.paras[i][0] == '-') or  \
@@ -233,7 +241,7 @@ def compare_surface(new_sur, old_sur):
             new_sur.rep_id = old_sur.id
             return new_sur
         return new_sur
-    
+
 def find_sur_via_id(sur_id, surfaces):
     '''
     '''
@@ -360,6 +368,7 @@ def read_cells(filename,cell_start_mark,cell_end_mark):
                 else:
                     # this line is a data line, store in the buffer
                     pre_lines.append(line)
+        f.close()
     return cells
 
 def is_cell(line):
@@ -396,7 +405,7 @@ def construct_cell(paras=None):
     mat_id = para_list[1]
     
     if mat_id != '0':
-        pattern = re.compile(r'(\d{1,5}\s+)(\d{1,5}\s+)(-?\d{1,}(\.\d{1,})?([E,e]-\d*)?)')
+        pattern = re.compile(r'(\d{1,5}\s+)(\d{1,5}\s+)(-?\d{1,}(\.\d{1,})?([E,e]-?\d+)?)')
         cell_serch_mark=pattern.search(cell_str)
         suf_start_pos=cell_serch_mark.span()[1]
         

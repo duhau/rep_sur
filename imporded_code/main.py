@@ -10,9 +10,9 @@ from rep_sur_1 import *
 # get current dir
 file_dir=os.getcwd()    
 # get origin MCNP files' dir
-origin_filename = read_filename(file_dir,'Open origin file')
+origin_filename = read_filename(file_dir,'打开原始文件')
 # get MCCAD_files' dir
-MCCAD_filename = read_filename(file_dir,'Open MCCAD file')
+MCCAD_filename = read_filename(file_dir,'打开MCCAD新生成的文件')
 # mark
 origin_start_mark=['CELL Card','SURFACE Card','Material Card']
 origin_end_mark=['End of CELL Card','End of SURFACE Card','End of Material Card']
