@@ -18,9 +18,9 @@ def get_part_file(pre_treatment_file, start_mark, end_mark):
     if pre_treatment_file:
         file_content=[]
         for i in range(len(start_mark)):
-            start_compile=re.compile(r'(.*)%s(.*)'% start_mark[i])  
+            start_compile=re.compile(r'(.*)%s(.*)'% start_mark[i],re.IGNORECASE)
             start_compile_mark=start_compile.search(pre_treatment_file)
-            end_compile=re.compile(r'(.*)%s(.*)'% end_mark[i])
+            end_compile=re.compile(r'(.*)%s(.*)'% end_mark[i],re.IGNORECASE)
             end_compile_mark=end_compile.search(pre_treatment_file)
             if start_compile_mark and end_compile_mark:
                 start_pos=pre_treatment_file.find(start_compile_mark.group(0))
@@ -41,9 +41,9 @@ def Pretreatment(filename,start_mark,end_mark):
         with open(filename, 'r') as fp:
             content=fp.read()
             # Modify MCCAD files to be recongnized
-            cell_end_compile=re.compile(r'(.*)%s(.*)' % start_mark[1])
+            cell_end_compile=re.compile(r'(.*)%s(.*)' % start_mark[1],re.IGNORECASE)
             cell_serch_mark=cell_end_compile.search(content)
-            surf_end_compile=re.compile(r'(.*)%s(.*)' % start_mark[2])
+            surf_end_compile=re.compile(r'(.*)%s(.*)' % start_mark[2],re.IGNORECASE)
             surf_serch_mark=surf_end_compile.search(content)
                 
             if surf_serch_mark and cell_serch_mark:

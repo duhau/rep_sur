@@ -1,4 +1,4 @@
-import sys
+
 import os
 from cx_Freeze import setup, Executable
 

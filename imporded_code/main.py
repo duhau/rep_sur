@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 
-from tkinter import filedialog, messagebox
+
 import os.path
 import re
 from replace import *

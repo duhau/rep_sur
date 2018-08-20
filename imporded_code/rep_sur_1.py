@@ -4,7 +4,6 @@
 from tkinter import filedialog, messagebox
 import os.path
 import re
-import math
 
 '''
 This code is writen by DuHua
@@ -26,13 +25,15 @@ class Cell(object):
     '''
     '''
     def __init__(self, cell_id='0', mat_id='0', mat_density=' ',
-               sur_list=[], imp_list=[1, 1]):
+               sur_list=[], imp_list=[1, 1],total_comment=[],part_comment=[]):
         # id is int
         self.id = cell_id
         self.mat_id = mat_id
         self.mat_density = mat_density
         self.sur_list = sur_list
         self.imp_list = imp_list
+        self.total_comment=total_comment
+        self.part_comment=part_comment
     
     def out_str(self):
         '''
@@ -48,7 +49,11 @@ class Cell(object):
                 out_str = ''.join([out_str, ' ', para])
             else:
                 out_str = ''.join([out_str, '\n', '              ', para])
-                line_breaker = line_breaker + 1                
+                line_breaker = line_breaker + 1
+        if self.total_comment:
+            out_str= self.total_comment + "\n" + out_str
+        if self.part_comment:
+            out_str= out_str + "\n" + self.part_comment
         return out_str
     
 class Surface(object):
@@ -136,8 +141,8 @@ def read_surfaces(filename,suf_start_mark,suf_end_mark):
         # Open origin MCNP file
         with open(filename, 'r') as f:
             sur_start = False
-            start_compile=re.compile(r'(.*)%s(.*)'% suf_start_mark) 
-            end_compile=re.compile(r'(.*)%s(.*)'% suf_end_mark)
+            start_compile=re.compile(r'(.*)%s(.*)'% suf_start_mark,re.IGNORECASE)
+            end_compile=re.compile(r'(.*)%s(.*)'% suf_end_mark,re.IGNORECASE)
             for line in f:
                 start_compile_mark=start_compile.search(line)
                 end_compile_mark=end_compile.search(line)
@@ -335,10 +340,14 @@ def read_cells(filename,cell_start_mark,cell_end_mark):
     '''
     cells = []
     pre_lines = []
+    part_comment=[]
+    total_comment=[]
     with open(filename, 'r') as f:
         cell_start = False
-        start_compile=re.compile(r'(.*)%s(.*)'% cell_start_mark) 
-        end_compile=re.compile(r'(.*)%s(.*)'% cell_end_mark)        
+        comment_start=False
+        total_comment_start=False
+        start_compile=re.compile(r'(.*)%s(.*)'% cell_start_mark,re.IGNORECASE)
+        end_compile=re.compile(r'(.*)%s(.*)'% cell_end_mark,re.IGNORECASE)
         for line in f:
             start_compile_mark=start_compile.search(line)
             end_compile_mark=end_compile.search(line)
@@ -346,24 +355,34 @@ def read_cells(filename,cell_start_mark,cell_end_mark):
             # read and treat
             if start_compile_mark:
                 cell_start = True
+                total_comment_start=True
                 continue
+
             if end_compile_mark:
-                cell = construct_cell(pre_lines)
+                cell = construct_cell(total_comment,part_comment,pre_lines)
                 cells.append(cell)
                 break            
-            if line.startswith("c") or line.startswith("C"):
+            if line.startswith("c")  or line.startswith("C"):
+                if total_comment_start:
+                    total_comment.append(line)
+                if comment_start:
+                    part_comment.append(line)
                 continue
             
             if cell_start:
                 # read cell
                 cell_flag = is_cell(line)
                 if cell_flag:
+                    comment_start = True
+                    total_comment_start=False
                     # lines in previous block represent a surface
                     if pre_lines:
-                        cell = construct_cell(pre_lines)
+                        cell = construct_cell(total_comment,part_comment,pre_lines)
                         cells.append(cell)
                         # store this line in the buffer
+                        total_comment = []
                         pre_lines = []
+                        part_comment=[]
                     pre_lines.append(line)
                 else:
                     # this line is a data line, store in the buffer
@@ -391,14 +410,22 @@ def is_cell(line):
     #else:
         #return True
 
-def construct_cell(paras=None):
+def construct_cell(total_comment=[],part_comment=[],paras=None):
     """
     construct cell using several lines
     """
     # paras check
+    # if not isinstance(total_comment, list):
+    #     raise (ValueError, "total_comment must be a list")
+    # if not isinstance(part_comment, list):
+    #     raise (ValueError, "part_comment must be a list")
     if not isinstance(paras, list):
         raise(ValueError, "paras must be a list")
     # combine these lines into one string
+    if total_comment:
+        total_comment='\n'.join(total_comment)
+    if part_comment:
+        part_comment='\n'.join(part_comment)
     cell_str = ''.join(paras)
     para_list = cell_str.split()
     cell_id = int(para_list[0])
@@ -422,13 +449,14 @@ def construct_cell(paras=None):
         cell_serch_mark=pattern.search(cell_str)
         suf_start_pos=cell_serch_mark.span()[1]
         
-        pattern_imp=re.compile(r'IMP:')
+        pattern_imp=re.compile(r'IMP:',re.IGNORECASE)
         cell_serch_mark_imp=pattern_imp.search(cell_str)
         suf_end_pos=cell_serch_mark_imp.span()[0]
         
         sur_list = cell_str[suf_start_pos:suf_end_pos].split()
         imp_list = cell_str[suf_end_pos:].split()        
-    return Cell(cell_id=cell_id, mat_id=mat_id, mat_density=mat_density, sur_list=sur_list, imp_list=imp_list)
+    return Cell(cell_id=cell_id, mat_id=mat_id, mat_density=mat_density, sur_list=sur_list, imp_list=imp_list,
+                total_comment=total_comment,part_comment=part_comment)
 
 
 if __name__ == '__main__':
